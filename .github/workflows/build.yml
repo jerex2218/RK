@@ -9,6 +9,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
+    permissions:
+      contents: write  # Добавляем явные права на запись
+    
     steps:
     - uses: actions/checkout@v4
     
@@ -33,6 +36,7 @@ jobs:
       run: |
         cd build
         cpack
+        ls -lh *.deb  # Показываем созданный пакет
         
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -42,11 +46,10 @@ jobs:
         
     - name: Create Release
       if: github.ref == 'refs/heads/main'
-      uses: softprops/action-gh-release@v1
+      uses: ncipollo/release-action@v1
       with:
-        tag_name: "v$(date +%Y%m%d%H%M%S)"
+        artifacts: "build/*.deb"
+        generateReleaseNotes: true
+        tag: "v$(date +%Y%m%d%H%M%S)"
         name: "Release $(date +'%Y-%m-%d %H:%M:%S')"
-        files: build/*.deb
-        draft: false
-        prerelease: false
         token: ${{ secrets.GITHUB_TOKEN }}
