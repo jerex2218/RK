@@ -18,12 +18,22 @@ jobs:
     - name: Set version
       id: set-version
       run: |
-        TIMESTAMP=$(date +%Y%m%d%H%M%S)
+        TAG_VERSION="1.0.0"
+        
+        BUILD_ID=$(date +'%Y%m%d-%H%M%S')
         SHORT_SHA=$(git rev-parse --short HEAD)
-        # Генерируем версию в формате, совместимом с Debian
-        VERSION="1.0.${TIMESTAMP}.${SHORT_SHA}"
-        echo "version=${VERSION}" >> $GITHUB_OUTPUT
-        echo "Generated version: ${VERSION}"
+        
+        RELEASE_NAME="Release ${TAG_VERSION} (${BUILD_ID})"
+        
+        DEB_VERSION="${TAG_VERSION}.${BUILD_ID}.${SHORT_SHA}"
+        
+        echo "tag_version=${TAG_VERSION}" >> $GITHUB_OUTPUT
+        echo "release_name=${RELEASE_NAME}" >> $GITHUB_OUTPUT
+        echo "deb_version=${DEB_VERSION}" >> $GITHUB_OUTPUT
+        
+        echo "Tag version: ${TAG_VERSION}"
+        echo "Release name: ${RELEASE_NAME}"
+        echo "Debian version: ${DEB_VERSION}"
         
     - name: Install dependencies
       run: |
@@ -34,8 +44,7 @@ jobs:
       run: |
         mkdir -p build
         cd build
-        # Передаем версию в CMake
-        cmake -DINSTALL_GTEST=OFF -DPACKAGE_VERSION="${{ steps.set-version.outputs.version }}" ..
+        cmake -DINSTALL_GTEST=OFF -DPACKAGE_VERSION="${{ steps.set-version.outputs.deb_version }}" ..
         make -j$(nproc)
         
     - name: Run tests
@@ -59,9 +68,10 @@ jobs:
       if: github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: "v${{ steps.set-version.outputs.version }}"
-        name: "Release v${{ steps.set-version.outputs.version }}"
+        tag_name: "v${{ steps.set-version.outputs.tag_version }}"
+        name: "${{ steps.set-version.outputs.release_name }}"
         files: build/*.deb
         draft: false
         prerelease: false
         token: ${{ secrets.GITHUB_TOKEN }}
+        generate_release_notes: true
