@@ -1,0 +1,51 @@
+name: Build, Test and Package
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential libgtest-dev
+        
+    - name: Configure and Build
+      run: |
+        mkdir -p build
+        cd build
+        cmake -DINSTALL_GTEST=OFF ..
+        make -j$(nproc)
+        
+    - name: Run tests
+      run: |
+        cd build
+        ctest --output-on-failure
+
+    - name: Verify tests
+      run: |
+        cd build
+        ./computer_tests
+        
+    - name: Create DEB package
+      run: |
+        cd build
+        cpack --config CPackConfig.cmake
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: deb-package
+        path: build/*.deb
+        
+    - name: Create Release
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: build/*.deb
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
