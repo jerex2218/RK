@@ -3,6 +3,14 @@ project(FactoryComputer)
 
 set(CMAKE_CXX_STANDARD 11)
 
+# Установка версии пакета
+if(NOT DEFINED PACKAGE_VERSION)
+    set(PACKAGE_VERSION "1.0.0")
+endif()
+
+set(CPACK_PACKAGE_VERSION "${PACKAGE_VERSION}")
+message(STATUS "Package version: ${PACKAGE_VERSION}")
+
 # Настройка Google Test
 option(INSTALL_GTEST "Install Google Test" OFF)
 include(FetchContent)
